@@ -1,3 +1,5 @@
+@echo off
+
 ::
 :: Publish the package to PyPi and clean up afterwards.
 ::
