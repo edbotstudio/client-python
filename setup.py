@@ -23,7 +23,7 @@ setuptools.setup(
 	author_email = "clive@ed.bot",
 	license = "MIT",
 	packages = [ "edbotstudio" ],
-	package_dir = { "edbotstudio": "dist" },
+	package_dir = { "edbotstudio": "src" },
 	install_requires = [ "ws4py", "pydash" ],
 	python_requires= ">=3",
 	classifiers = [
