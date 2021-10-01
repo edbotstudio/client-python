@@ -93,7 +93,7 @@ class EdbotStudioClient(WebSocketClient):
 					merge(self.data, message["data"])
 					self.connected = True
 					if self.listener is not None:
-						self.listener(message["data"])
+						self.listener(message)
 
 				#
 				# Use the sequence as a key in the pending dictionary. There
@@ -127,6 +127,15 @@ class EdbotStudioClient(WebSocketClient):
 
 	def closed(self, code, reason=None):
 		self.connected = False
+		self.data.clear()
+		if self.listener is not None:
+			self.listener({
+				"sort": EdbotStudioClient.Message["CLOSE"],
+				"data": {
+					"code": code,
+					"reason": reason
+				}
+			})
 
 	###########################################################################
 
