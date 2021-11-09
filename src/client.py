@@ -12,38 +12,35 @@ from pydash.objects import merge, unset
 from ws4py.client.threadedclient import WebSocketClient
 
 class EdbotStudioClient(WebSocketClient):
-	Message = {
+	Category = {
 		"REQUEST": 1,
 		"RESPONSE": 2,
 		"UPDATE": 3,
 		"DELETE": 4,
 		"CLOSE": 5
 	}
-	Request = {
+	Type = {
 		"INIT": 1,
 		"GET_CLIENTS": 2,
 		"GET_SERVERS": 3,
-		"RUN_MOTION": 10,
-		"SET_SERVOS": 11,
-		"SET_SPEAKER": 20,
-		"SET_DISPLAY": 21,
-		"SET_OPTIONS": 22,
-		"SET_CUSTOM": 23,
-		"SAY": 24, 
-		"RESET": 25
-	}
-	Filter = {
-		"ALL": 1,
-		"CFG": 2
+		"GET_SENSORS": 4,
+		"RUN_MOTION": 5,
+		"SET_SERVOS": 6,
+		"SET_SPEAKER": 7,
+		"SET_DISPLAY": 8,
+		"SET_OPTIONS": 9,
+		"SET_CUSTOM": 10,
+		"SAY": 11, 
+		"RESET": 12
 	}
 
-	def __init__(self, server="localhost", port=54255, name=None, listener=None,
-			filter=Filter["ALL"], device_alias=None):
+	def __init__(self, server="localhost", port=54255, listener=None, name=None,
+			reporters=True, device_alias=None):
 		self.server = server
 		self.port = port
-		self.name = name
 		self.listener = listener
-		self.filter = filter
+		self.name = name
+		self.reporters = reporters
 		self.device_alias = device_alias
 		self.connected = False
 		self.sequence = 1
@@ -72,10 +69,10 @@ class EdbotStudioClient(WebSocketClient):
 		# Send the INIT request.
 		params = {
 			"name": self.name,
-			"filter": self.filter,
+			"reporters": self.reporters,
 			"deviceAlias": self.device_alias
 		}
-		self._send(EdbotStudioClient.Request["INIT"], params, callback)
+		self._send(EdbotStudioClient.Type["INIT"], params, callback)
 
 	###########################################################################
 
@@ -85,11 +82,11 @@ class EdbotStudioClient(WebSocketClient):
 	def received_message(self, m):
 		message = json.loads(m.data.decode("UTF-8"))
 		try:
-			if message["sort"] == EdbotStudioClient.Message["RESPONSE"]:
+			if message["category"] == EdbotStudioClient.Category["RESPONSE"]:
 				#
 				# Run code specific to the response message type.
 				#
-				if message["type"] == EdbotStudioClient.Request["INIT"]:
+				if message["type"] == EdbotStudioClient.Type["INIT"]:
 					merge(self.data, message["data"])
 					self.connected = True
 					if self.listener is not None:
@@ -112,12 +109,12 @@ class EdbotStudioClient(WebSocketClient):
 					self.pending[sequence]["response"] = message
 					event = pending["event"]
 					event.set()
-			elif message["sort"] == EdbotStudioClient.Message["UPDATE"]:
+			elif message["category"] == EdbotStudioClient.Category["UPDATE"]:
 				if self.connected:
 					merge(self.data, message["data"])
 					if self.listener is not None:
 						self.listener(message)
-			elif message["sort"] == EdbotStudioClient.Message["DELETE"]:
+			elif message["category"] == EdbotStudioClient.Category["DELETE"]:
 				if self.connected:
 					unset(self.data, message["data"]["path"])
 					if self.listener is not None:
@@ -130,7 +127,7 @@ class EdbotStudioClient(WebSocketClient):
 		self.data.clear()
 		if self.listener is not None:
 			self.listener({
-				"sort": EdbotStudioClient.Message["CLOSE"],
+				"category": EdbotStudioClient.Category["CLOSE"],
 				"data": {
 					"code": code,
 					"reason": reason
@@ -184,34 +181,37 @@ class EdbotStudioClient(WebSocketClient):
 			time.sleep(0.1)
 
 	def get_clients(self, callback=None):
-		return self._request(EdbotStudioClient.Request["GET_CLIENTS"], None, callback)
+		return self._request(EdbotStudioClient.Type["GET_CLIENTS"], None, callback)
 
 	def get_servers(self, callback=None):
-		return self._request(EdbotStudioClient.Request["GET_SERVERS"], None, callback)
+		return self._request(EdbotStudioClient.Type["GET_SERVERS"], None, callback)
+
+	def get_sensors(self, params, callback=None):
+		return self._request(EdbotStudioClient.Type["GET_SENSORS"], params, callback)
 
 	def run_motion(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["RUN_MOTION"], params, callback)
+		return self._request(EdbotStudioClient.Type["RUN_MOTION"], params, callback)
 
 	def set_servos(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SET_SERVOS"], params, callback)
+		return self._request(EdbotStudioClient.Type["SET_SERVOS"], params, callback)
 
 	def set_speaker(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SET_SPEAKER"], params, callback)
+		return self._request(EdbotStudioClient.Type["SET_SPEAKER"], params, callback)
 
 	def set_display(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SET_DISPLAY"], params, callback)
+		return self._request(EdbotStudioClient.Type["SET_DISPLAY"], params, callback)
 
 	def set_options(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SET_OPTIONS"], params, callback)
+		return self._request(EdbotStudioClient.Type["SET_OPTIONS"], params, callback)
 
 	def set_custom(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SET_CUSTOM"], params, callback)
+		return self._request(EdbotStudioClient.Type["SET_CUSTOM"], params, callback)
 
 	def say(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["SAY"], params, callback)
+		return self._request(EdbotStudioClient.Type["SAY"], params, callback)
 
 	def reset(self, params, callback=None):
-		return self._request(EdbotStudioClient.Request["RESET"], params, callback)
+		return self._request(EdbotStudioClient.Type["RESET"], params, callback)
 
 	###########################################################################
 
@@ -232,7 +232,7 @@ class EdbotStudioClient(WebSocketClient):
 
 			self.send(
 				json.dumps({
-					"sort": EdbotStudioClient.Message["REQUEST"],
+					"category": EdbotStudioClient.Category["REQUEST"],
 					"type": type,
 					"sequence": sequence,
 					"params": params
