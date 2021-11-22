@@ -24,14 +24,15 @@ class EdbotStudioClient(WebSocketClient):
 		"GET_CLIENTS": 2,
 		"GET_SERVERS": 3,
 		"GET_SENSORS": 4,
-		"RUN_MOTION": 5,
-		"SET_SERVOS": 6,
-		"SET_SPEAKER": 7,
-		"SET_DISPLAY": 8,
-		"SET_OPTIONS": 9,
-		"SET_CUSTOM": 10,
-		"SAY": 11, 
-		"RESET": 12
+		"GET_SERVOS": 5,
+		"RUN_MOTION": 6,
+		"SET_SERVOS": 7,
+		"SET_SPEAKER": 8,
+		"SET_DISPLAY": 9,
+		"SET_OPTIONS": 10,
+		"SET_CUSTOM": 11,
+		"SAY": 12, 
+		"RESET": 13
 	}
 
 	def __init__(self, server="localhost", port=54255, listener=None, name=None,
@@ -188,6 +189,9 @@ class EdbotStudioClient(WebSocketClient):
 
 	def get_sensors(self, params, callback=None):
 		return self._request(EdbotStudioClient.Type["GET_SENSORS"], params, callback)
+
+	def get_servos(self, params, callback=None):
+		return self._request(EdbotStudioClient.Type["GET_SERVOS"], params, callback)
 
 	def run_motion(self, params, callback=None):
 		return self._request(EdbotStudioClient.Type["RUN_MOTION"], params, callback)
