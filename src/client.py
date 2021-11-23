@@ -82,46 +82,43 @@ class EdbotStudioClient(WebSocketClient):
 
 	def received_message(self, m):
 		message = json.loads(m.data.decode("UTF-8"))
-		try:
-			if message["category"] == EdbotStudioClient.Category["RESPONSE"]:
-				#
-				# Run code specific to the response message type.
-				#
-				if message["type"] == EdbotStudioClient.Type["INIT"]:
-					merge(self.data, message["data"])
-					self.connected = True
-					if self.listener is not None:
-						self.listener(message)
+		if message["category"] == EdbotStudioClient.Category["RESPONSE"]:
+			#
+			# Run code specific to the response message type.
+			#
+			if message["type"] == EdbotStudioClient.Type["INIT"]:
+				merge(self.data, message["data"])
+				self.connected = True
+				if self.listener is not None:
+					self.listener(message)
 
-				#
-				# Use the sequence as a key in the pending dictionary. There
-				# will either be a callback to trigger or an event to resolve.
-				#
-				sequence = message["sequence"]
-				pending = self.pending[sequence]
-				callback = pending["callback"]
-				if callback is not None:
-					if message["status"]["success"]:
-						callback(True, message["data"])
-					else:
-						callback(False, message["status"]["text"])
-					del self.pending[sequence]
+			#
+			# Use the sequence as a key in the pending dictionary. There
+			# will either be a callback to trigger or an event to resolve.
+			#
+			sequence = message["sequence"]
+			pending = self.pending[sequence]
+			callback = pending["callback"]
+			if callback is not None:
+				if message["status"]["success"]:
+					callback(True, { "data": message["data"] })
 				else:
-					self.pending[sequence]["response"] = message
-					event = pending["event"]
-					event.set()
-			elif message["category"] == EdbotStudioClient.Category["UPDATE"]:
-				if self.connected:
-					merge(self.data, message["data"])
-					if self.listener is not None:
-						self.listener(message)
-			elif message["category"] == EdbotStudioClient.Category["DELETE"]:
-				if self.connected:
-					unset(self.data, message["data"]["path"])
-					if self.listener is not None:
-						self.listener(message)
-		except:
-			print("Ignoring message: " + str(message))
+					callback(False, { "data": message["status"]["text"] })
+				del self.pending[sequence]
+			else:
+				self.pending[sequence]["response"] = message
+				event = pending["event"]
+				event.set()
+		elif message["category"] == EdbotStudioClient.Category["UPDATE"]:
+			if self.connected:
+				merge(self.data, message["data"])
+				if self.listener is not None:
+					self.listener(message)
+		elif message["category"] == EdbotStudioClient.Category["DELETE"]:
+			if self.connected:
+				unset(self.data, message["data"]["path"])
+				if self.listener is not None:
+					self.listener(message)
 
 	def closed(self, code, reason=None):
 		self.connected = False
